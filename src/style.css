@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(139, 92, 246, 0.05); }
+::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.35); }
+
+.gradient-text {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-cyan {
+  background: linear-gradient(135deg, #06b6d4, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow-card {
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  background: rgba(18, 18, 31, 0.95) !important;
+}
+
+.glow-card:hover {
+  border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+.v-application {
+  background: #0a0a14 !important;
+}
+
+.v-navigation-drawer {
+  border-right: 1px solid rgba(139, 92, 246, 0.12) !important;
+}
+
+.v-app-bar {
+  border-bottom: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+.v-data-table {
+  background: transparent !important;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px currentColor; }
+  50% { opacity: 0.6; box-shadow: 0 0 16px currentColor; }
+}
+
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
