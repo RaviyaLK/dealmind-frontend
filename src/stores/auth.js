@@ -1,15 +1,18 @@
 import { reactive } from 'vue'
 import { authAPI } from '../api'
 
+// Demo mode — default user so the app works without login
+const _defaultUser = { id: 'demo', email: 'ravindu@esshva.com', full_name: 'Ravindu' }
+
 const state = reactive({
-  user: JSON.parse(localStorage.getItem('dealmind_user') || 'null'),
-  token: localStorage.getItem('dealmind_token') || null,
+  user: JSON.parse(localStorage.getItem('dealmind_user') || 'null') || _defaultUser,
+  token: localStorage.getItem('dealmind_token') || 'demo-token',
   loading: false,
   error: null,
 })
 
 export function useAuth() {
-  const isAuthenticated = () => !!state.token
+  const isAuthenticated = () => true
 
   async function login(email, password) {
     state.loading = true
@@ -52,11 +55,12 @@ export function useAuth() {
   }
 
   function logout() {
-    state.token = null
-    state.user = null
+    // Demo mode — just reset to default user, stay on dashboard
+    state.token = 'demo-token'
+    state.user = _defaultUser
     localStorage.removeItem('dealmind_token')
     localStorage.removeItem('dealmind_user')
-    window.location.href = '/login'
+    window.location.href = '/dashboard'
   }
 
   async function fetchUser() {

@@ -20,17 +20,10 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Response interceptor: handle 401 (expired/invalid token)
+// Response interceptor: log errors (auth redirect disabled for demo)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('dealmind_token')
-      localStorage.removeItem('dealmind_user')
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
-      }
-    }
     return Promise.reject(error)
   }
 )

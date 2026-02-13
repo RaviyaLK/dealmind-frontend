@@ -82,21 +82,12 @@ const router = createRouter({
   routes,
 })
 
-// Auth guard
+// Auth guard disabled for demo — all routes accessible
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('dealmind_token')
-  if (to.meta.requiresAuth === false) {
-    if (token && to.path === '/login') {
-      next('/dashboard')
-    } else {
-      next()
-    }
+  if (to.path === '/login') {
+    next('/dashboard')
   } else {
-    if (!token) {
-      next('/login')
-    } else {
-      next()
-    }
+    next()
   }
 })
 
