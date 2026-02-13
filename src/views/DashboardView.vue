@@ -1,15 +1,12 @@
 <template>
   <div>
-    <!-- Loading Skeleton -->
     <v-skeleton-loader v-if="loading" type="heading, article, article, article, article" class="mb-6" />
 
-    <!-- Header -->
     <div style="margin-bottom: 28px;" v-if="!loading">
-      <div style="font-size: 28px; font-weight: 700; color: #ffffff;">Good Morning, {{ userName }}</div>
+      <div style="font-size: 28px; font-weight: 700; color: #ffffff;">{{ greeting }}, {{ userName }}</div>
       <div style="font-size: 14px; color: #9ca3af; margin-top: 4px;">Here's your deal intelligence for today</div>
     </div>
 
-    <!-- Stats Row -->
     <v-row class="mb-6" v-if="!loading">
       <v-col cols="3">
         <v-card class="glow-card" style="position: relative; overflow: hidden;">
@@ -81,9 +78,7 @@
       </v-col>
     </v-row>
 
-    <!-- Main Content Grid -->
     <v-row v-if="!loading">
-      <!-- Deal Pipeline -->
       <v-col cols="8">
         <v-card class="glow-card">
           <div style="padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(139, 92, 246, 0.12);">
@@ -100,7 +95,6 @@
             />
           </div>
 
-          <!-- Empty State -->
           <div v-if="filteredDeals.length === 0" style="padding: 60px 20px; text-align: center;">
             <v-icon size="64" color="#6b7280" style="margin-bottom: 16px;">mdi-briefcase-outline</v-icon>
             <div style="font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">No deals yet</div>
@@ -108,7 +102,6 @@
             <v-btn variant="flat" color="primary" @click="createNewDeal">Create Deal</v-btn>
           </div>
 
-          <!-- Table -->
           <v-table v-else style="background: transparent;">
             <thead>
               <tr style="background: rgba(139, 92, 246, 0.04);">
@@ -151,9 +144,7 @@
         </v-card>
       </v-col>
 
-      <!-- Right Sidebar -->
       <v-col cols="4">
-        <!-- Active Alerts -->
         <v-card class="glow-card mb-5">
           <v-card-text style="padding: 20px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
@@ -176,9 +167,6 @@
             </div>
           </v-card-text>
         </v-card>
-
-        <!-- Review Queue -->
-      
       </v-col>
     </v-row>
   </div>
@@ -198,6 +186,14 @@ const alerts = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
 
+// Computed Greeting based on time
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good Morning'
+  if (hour < 17) return 'Good Afternoon'
+  return 'Good Evening'
+})
+
 const userName = computed(() => auth.state.user?.full_name || 'User')
 
 const filteredDeals = computed(() => {
@@ -213,7 +209,6 @@ const activeDeals = computed(() => deals.value.filter(d => d.status === 'active'
 const atRisk = computed(() => deals.value.filter(d => d.status === 'at_risk').length)
 const totalValue = computed(() => deals.value.reduce((sum, d) => sum + (d.deal_value || 0), 0))
 const winRate = computed(() => {
-  // Count deals with a final outcome: won/closed vs declined/lost
   const wonStatuses = ['closed', 'won']
   const lostStatuses = ['declined', 'lost', 'no_go']
   const wonDeals = deals.value.filter(d => wonStatuses.includes(d.status) || wonStatuses.includes(d.stage)).length
