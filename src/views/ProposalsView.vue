@@ -61,6 +61,16 @@
         />
         <v-spacer />
         <v-btn
+          :variant="showChat ? 'flat' : 'outlined'"
+          :color="showChat ? 'cyan' : 'purple'"
+          size="small"
+          class="text-none mr-2"
+          @click="showChat = !showChat"
+        >
+          <v-icon start size="16">mdi-chat-outline</v-icon>
+          {{ showChat ? 'Close Chat' : 'Chat with Quinn' }}
+        </v-btn>
+        <v-btn
           variant="flat"
           color="purple"
           size="small"
@@ -80,7 +90,7 @@
 
       <v-row>
         <!-- Left Column: Proposal content -->
-        <v-col cols="8">
+        <v-col :cols="showChat ? 7 : 8">
           <v-card class="glow-card mb-4">
             <v-card-text style="padding: 32px;">
               <!-- Compliance score bar -->
@@ -211,90 +221,214 @@
           </v-card>
         </v-col>
 
-        <!-- Right Column: Attachments + Actions -->
-        <v-col cols="4">
-          <!-- Upload Supporting Files -->
-          <v-card class="glow-card mb-4">
-            <v-card-text style="padding: 24px;">
-              <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Supporting Files</div>
-              <div style="font-size: 12px; color: #9ca3af; margin-bottom: 16px;">
-                Upload SOWs, pricing sheets, case studies, or any supporting docs. Text files are auto-indexed into the knowledge base for future proposals.
+        <!-- Right Column: Chat Panel OR Attachments -->
+        <v-col :cols="showChat ? 5 : 4">
+          <!-- ═══ CHAT PANEL ═══ -->
+          <v-card v-if="showChat" class="glow-card" style="display: flex; flex-direction: column; height: calc(100vh - 200px); overflow: hidden;">
+            <!-- Chat Header -->
+            <div style="padding: 16px 20px; border-bottom: 1px solid rgba(139, 92, 246, 0.12); display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #06b6d4); display: flex; align-items: center; justify-content: center;">
+                <v-icon size="18" color="white">mdi-robot-happy-outline</v-icon>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-size: 14px; font-weight: 700;">Quinn</div>
+                <div v-if="chatLoading" style="font-size: 11px; color: #06b6d4;">Editing proposal...</div>
+                <div v-else style="font-size: 11px; color: #6b7280;">Proposal editor</div>
+              </div>
+              <v-btn icon size="x-small" variant="text" @click="showChat = false">
+                <v-icon size="16">mdi-close</v-icon>
+              </v-btn>
+            </div>
+
+            <!-- Chat Messages -->
+            <div ref="chatContainer" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+              <!-- Welcome message -->
+              <div v-if="chatMessages.length === 0" style="text-align: center; padding: 40px 20px;">
+                <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.1)); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                  <v-icon size="28" color="purple">mdi-chat-processing-outline</v-icon>
+                </div>
+                <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Chat with Quinn</div>
+                <div style="font-size: 12px; color: #9ca3af; line-height: 1.6;">
+                  I can edit sections, add content, and even email proposals for you. Try:<br/>
+                  <span style="color: #c084fc;">"Make the executive summary shorter"</span><br/>
+                  <span style="color: #c084fc;">"Add a section about cloud infrastructure"</span><br/>
+                  <span style="color: #c084fc;"></span>
+                </div>
               </div>
 
-              <!-- Upload area -->
+              <!-- Message bubbles -->
               <div
-                style="border: 2px dashed rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s;"
-                @dragover.prevent
-                @drop.prevent="handleDrop"
-                @click="$refs.fileInput.click()"
+                v-for="(msg, idx) in chatMessages"
+                :key="idx"
+                :style="{
+                  display: 'flex',
+                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                }"
               >
-                <v-icon size="32" color="purple" style="margin-bottom: 8px;">mdi-cloud-upload-outline</v-icon>
-                <div style="font-size: 13px; font-weight: 500;">Drop files here or click to browse</div>
-                <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">PDF, DOCX, XLSX, PPTX, TXT, CSV</div>
-                <input
-                  ref="fileInput"
-                  type="file"
-                  multiple
-                  accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg"
-                  style="display: none;"
-                  @change="handleFileSelect"
-                />
-              </div>
-
-              <!-- Upload progress -->
-              <div v-if="uploading" style="margin-top: 12px; text-align: center;">
-                <v-progress-circular indeterminate color="purple" size="24" width="2" />
-                <span style="font-size: 12px; color: #9ca3af; margin-left: 8px;">Uploading...</span>
-              </div>
-
-              <!-- Attachment list -->
-              <div v-if="attachments.length > 0" style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
-                <div
-                  v-for="att in attachments"
-                  :key="att.id"
-                  style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.12);"
-                >
-                  <v-icon :color="fileIconColor(att.file_type)" size="20">{{ fileIcon(att.file_type) }}</v-icon>
-                  <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ att.filename }}</div>
-                    <div style="font-size: 10px; color: #6b7280;">{{ formatBytes(att.file_size) }} &bull; {{ att.is_processed ? 'Indexed' : 'Processing...' }}</div>
+                <!-- Quinn avatar (assistant only) -->
+                <div v-if="msg.role === 'assistant'" style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #06b6d4); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px; margin-top: 2px;">
+                  <v-icon size="14" color="white">mdi-robot-happy-outline</v-icon>
+                </div>
+                <div style="max-width: 85%;">
+                  <div
+                    :style="{
+                      padding: '10px 14px',
+                      borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                      fontSize: '13px',
+                      lineHeight: '1.5',
+                      background: msg.role === 'user' ? 'rgba(124, 58, 237, 0.15)' : '#1a1a2e',
+                      border: msg.role === 'user' ? '1px solid rgba(124, 58, 237, 0.3)' : '1px solid rgba(139, 92, 246, 0.12)',
+                      color: msg.role === 'user' ? '#e9d5ff' : '#d1d5db',
+                    }"
+                  >
+                    {{ msg.content }}
                   </div>
-                  <v-btn icon size="x-small" variant="text" color="error" @click="deleteAttachment(att)">
-                    <v-icon size="14">mdi-close</v-icon>
-                  </v-btn>
+                  <!-- MCP Tools Used chips -->
+                  <div v-if="msg.tools_used && msg.tools_used.length > 0" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+                    <span
+                      v-for="tool in msg.tools_used"
+                      :key="tool"
+                      style="font-size: 10px; padding: 2px 8px; border-radius: 10px; background: rgba(6, 182, 212, 0.12); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.25); font-weight: 500;"
+                    >
+                      <v-icon size="10" style="margin-right: 2px;">mdi-tools</v-icon>
+                      {{ tool }}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div v-else-if="!uploading" style="text-align: center; padding: 12px; color: #4b5563; font-size: 12px;">
-                No files uploaded yet
+              <!-- Loading indicator -->
+              <div v-if="chatLoading" style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #06b6d4); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <v-icon size="14" color="white">mdi-robot-happy-outline</v-icon>
+                </div>
+                <div style="padding: 10px 14px; border-radius: 14px 14px 14px 4px; background: #1a1a2e; border: 1px solid rgba(139, 92, 246, 0.12);">
+                  <div style="display: flex; gap: 4px; align-items: center;">
+                    <span class="chat-dot" style="width: 6px; height: 6px; border-radius: 50%; background: #06b6d4; animation: chatPulse 1.4s ease-in-out infinite;"></span>
+                    <span class="chat-dot" style="width: 6px; height: 6px; border-radius: 50%; background: #06b6d4; animation: chatPulse 1.4s ease-in-out 0.2s infinite;"></span>
+                    <span class="chat-dot" style="width: 6px; height: 6px; border-radius: 50%; background: #06b6d4; animation: chatPulse 1.4s ease-in-out 0.4s infinite;"></span>
+                  </div>
+                </div>
               </div>
-            </v-card-text>
+            </div>
+
+            <!-- Chat Input -->
+            <div style="padding: 12px 16px; border-top: 1px solid rgba(139, 92, 246, 0.12); flex-shrink: 0;">
+              <div style="display: flex; gap: 8px; align-items: flex-end;">
+                <v-textarea
+                  v-model="chatInput"
+                  placeholder="Tell Quinn how to change the proposal..."
+                  rows="1"
+                  max-rows="3"
+                  auto-grow
+                  hide-details
+                  density="compact"
+                  variant="outlined"
+                  :disabled="chatLoading"
+                  @keydown.enter.exact.prevent="sendChatMessage"
+                  style="font-size: 13px;"
+                />
+                <v-btn
+                  icon
+                  size="small"
+                  color="purple"
+                  variant="flat"
+                  :disabled="!chatInput.trim() || chatLoading"
+                  :loading="chatLoading"
+                  @click="sendChatMessage"
+                  style="flex-shrink: 0;"
+                >
+                  <v-icon size="18">mdi-send</v-icon>
+                </v-btn>
+              </div>
+            </div>
           </v-card>
 
-          <!-- Proposal Info Card -->
-          <v-card class="glow-card">
-            <v-card-text style="padding: 24px;">
-              <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Info</div>
-              <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                  <span style="color: #6b7280;">Generated by</span>
-                  <span style="color: #c084fc; font-weight: 600;">Quinn</span>
+          <!-- ═══ ATTACHMENTS SIDEBAR (when chat is closed) ═══ -->
+          <template v-else>
+            <!-- Upload Supporting Files -->
+            <v-card class="glow-card mb-4">
+              <v-card-text style="padding: 24px;">
+                <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Supporting Files</div>
+                <div style="font-size: 12px; color: #9ca3af; margin-bottom: 16px;">
+                  Upload SOWs, pricing sheets, case studies, or any supporting docs. Text files are auto-indexed into the knowledge base for future proposals.
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                  <span style="color: #6b7280;">Version</span>
-                  <span>v{{ currentProposal.version }}</span>
+
+                <!-- Upload area -->
+                <div
+                  style="border: 2px dashed rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s;"
+                  @dragover.prevent
+                  @drop.prevent="handleDrop"
+                  @click="$refs.fileInput.click()"
+                >
+                  <v-icon size="32" color="purple" style="margin-bottom: 8px;">mdi-cloud-upload-outline</v-icon>
+                  <div style="font-size: 13px; font-weight: 500;">Drop files here or click to browse</div>
+                  <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">PDF, DOCX, XLSX, PPTX, TXT, CSV</div>
+                  <input
+                    ref="fileInput"
+                    type="file"
+                    multiple
+                    accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg"
+                    style="display: none;"
+                    @change="handleFileSelect"
+                  />
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                  <span style="color: #6b7280;">Created</span>
-                  <span>{{ formatDate(currentProposal.created_at) }}</span>
+
+                <!-- Upload progress -->
+                <div v-if="uploading" style="margin-top: 12px; text-align: center;">
+                  <v-progress-circular indeterminate color="purple" size="24" width="2" />
+                  <span style="font-size: 12px; color: #9ca3af; margin-left: 8px;">Uploading...</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                  <span style="color: #6b7280;">Attachments</span>
-                  <span>{{ attachments.length }} files</span>
+
+                <!-- Attachment list -->
+                <div v-if="attachments.length > 0" style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+                  <div
+                    v-for="att in attachments"
+                    :key="att.id"
+                    style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.12);"
+                  >
+                    <v-icon :color="fileIconColor(att.file_type)" size="20">{{ fileIcon(att.file_type) }}</v-icon>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ att.filename }}</div>
+                      <div style="font-size: 10px; color: #6b7280;">{{ formatBytes(att.file_size) }} &bull; {{ att.is_processed ? 'Indexed' : 'Processing...' }}</div>
+                    </div>
+                    <v-btn icon size="x-small" variant="text" color="error" @click="deleteAttachment(att)">
+                      <v-icon size="14">mdi-close</v-icon>
+                    </v-btn>
+                  </div>
                 </div>
-              </div>
-            </v-card-text>
-          </v-card>
+
+                <div v-else-if="!uploading" style="text-align: center; padding: 12px; color: #4b5563; font-size: 12px;">
+                  No files uploaded yet
+                </div>
+              </v-card-text>
+            </v-card>
+
+            <!-- Proposal Info Card -->
+            <v-card class="glow-card">
+              <v-card-text style="padding: 24px;">
+                <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Info</div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                    <span style="color: #6b7280;">Generated by</span>
+                    <span style="color: #c084fc; font-weight: 600;">Quinn</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                    <span style="color: #6b7280;">Version</span>
+                    <span>v{{ currentProposal.version }}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                    <span style="color: #6b7280;">Created</span>
+                    <span>{{ formatDate(currentProposal.created_at) }}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                    <span style="color: #6b7280;">Attachments</span>
+                    <span>{{ attachments.length }} files</span>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </template>
         </v-col>
       </v-row>
     </template>
@@ -385,7 +519,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { dealsAPI, proposalsAPI } from '../api'
 import api from '../api/client'
@@ -397,6 +531,7 @@ const loadingDeals = ref(false)
 const uploading = ref(false)
 const reviewing = ref(false)
 const exporting = ref(false)
+const chatLoading = ref(false)
 
 const deals = ref([])
 const proposals = ref([])
@@ -406,6 +541,54 @@ const selectedDealId = ref(null)
 const selectedProposalId = ref(null)
 const currentProposal = ref(null)
 const reviewNotes = ref('')
+
+// ── Chat with Quinn ──
+const showChat = ref(false)
+const chatMessages = ref([])
+const chatInput = ref('')
+const chatContainer = ref(null)
+
+async function sendChatMessage() {
+  const msg = chatInput.value.trim()
+  if (!msg || chatLoading.value || !currentProposal.value) return
+
+  // Add user message
+  chatMessages.value.push({ role: 'user', content: msg })
+  chatInput.value = ''
+  chatLoading.value = true
+  await scrollChatToBottom()
+
+  try {
+    // Build history (exclude the message we just pushed — it goes as `message`)
+    const history = chatMessages.value.slice(0, -1)
+    const res = await proposalsAPI.chat(currentProposal.value.id, msg, history)
+
+    // Add Quinn's reply (with tools_used metadata)
+    chatMessages.value.push({
+      role: 'assistant',
+      content: res.data.reply,
+      tools_used: res.data.tools_used || [],
+    })
+
+    // Update the proposal content — the renderedContent computed will auto-refresh
+    if (res.data.updated_content) {
+      currentProposal.value.content = res.data.updated_content
+    }
+  } catch (e) {
+    const errMsg = e.response?.data?.detail || 'Something went wrong. Please try again.'
+    chatMessages.value.push({ role: 'assistant', content: `Sorry, ${errMsg}` })
+  } finally {
+    chatLoading.value = false
+    await scrollChatToBottom()
+  }
+}
+
+async function scrollChatToBottom() {
+  await nextTick()
+  if (chatContainer.value) {
+    chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+  }
+}
 
 const snackbar = ref({ show: false, text: '', color: 'success' })
 function showMsg(text, color = 'success') {
@@ -680,3 +863,10 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+@keyframes chatPulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+</style>

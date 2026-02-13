@@ -105,6 +105,7 @@ export const proposalsAPI = {
       responseType: 'blob',
     }),
   templates: () => api.get('/api/proposals/templates'),
+  chat: (id, message, history) => api.post(`/api/proposals/${id}/chat`, { message, history }),
 }
 
 // ── Agents ──
